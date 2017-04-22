@@ -1,0 +1,11 @@
+#emacs buffer files
+*[~#]
+#latex compil files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.log
+*.run.xml
+*.toc
+_*
