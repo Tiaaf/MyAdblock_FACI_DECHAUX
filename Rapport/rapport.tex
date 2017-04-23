@@ -2,7 +2,6 @@
 
 \usepackage{babel}
 
-
 \usepackage{graphicx}
 \graphicspath{{images/}}
 
@@ -12,6 +11,12 @@
 
 \usepackage[T1]{fontenc}
 \usepackage{fontspec}
+
+\usepackage[french]{algorithm2e}
+\SetKwInput{Donnees}{Données}
+\SetKwInput{Res}{Résultats}
+\SetKwIF{Si}{SinonSi}{Sinon}{si}{alors}{sinon si}{alors}{finsi}
+\SetKwFor{Tq}{tant que}{faire}{fintq}
 
 \setlength{\parindent}{4em}
 \setlength{\parskip}{1em}
@@ -149,19 +154,14 @@ Puis il y a une première requête HTTP du site qui renvoie un paquet malformé.
   \centering
   \includegraphics{Q3/requête_HTTP.png}
   \caption{Première requête HTTP}
-\end{figure}
-
-\begin{figure}[h]
-  \centering
+  \vspace{1cm}
   \includegraphics{Q3/réponse_serveur.png}
   \caption{Réponse du serveur}
-\end{figure}
-
-\begin{figure}[h]
-  \centering
+  \vspace{1cm}
   \includegraphics{Q3/requête_HTTP_2.png}
   \caption{Deuxième requête HTTP}
 \end{figure}
+\vspace{1cm}
 
 Par la suite, contrairement à la situation sans proxy, il y a un échange d'une série de paquets TCP entre le client et le serveur, correspondant aux données de la page à charger. Cela doit être dû à la mauvaise connexion à cause du passage par le proxy.
 
@@ -172,5 +172,54 @@ Enfin lorsque nous quittons le site, contrairement à la première fois, le prox
   \includegraphics{Q3/fin_de_connexion.png}
   \caption{Fin de connexion}
 \end{figure}
+\vspace{1cm}
+
+\section{Notre proxy}
+
+\subsection{Spécification de l'algorithme}
+
+Nous allons détailler ici une première approche de l'algorithme de notre serveur proxy en pseudo-code.
+
+\begin{algorithm}[h]
+  \Donnees{RequêteClient, RéponseServeur, SocketClient, SocketServeur, AdresseServeur}
+  \Res{Laisse passer la RéponseServeur au client ou lui renvoie une erreur}
+  \Tq{Serveur Proxy Lancé}{   
+    //ie tant que le serveur proxy est en ligne.\par
+    Attente de l'arrivée d'une requête\; 
+    //ie d'une requête par un client.\par
+    \Si{Requête arrivée}{ 
+      //Si une requête est réceptionnée au niveau du socket\par
+      RequêteClient = RécupérerRequête(SocketClient)\;
+      AdresseServeur = RequêteToAdresse(RequêteClient)\; 
+      //Récupère l'adresse demandée dans la requête\par
+      \Si{not AdresseOK(AdresseServeur)}{ 
+        //On teste si l'adresse est interdite ou pas.\par
+        AfficherDansLaConsole(\og L'adresse \%s est bloquée par le proxy.\fg,AdresseServeur)\;
+      }
+      \Sinon{
+        SocketServeur = CréerSocket(AdresseServeur)\;
+        EnvoyerRequête(RequêteClient,SocketServeur)\;
+        RéponseServeurTemp = 0\; 
+        //Variable locale qui sockera les paquets reçus au fur et à mesure.\par
+        \Tq{not RéponseServeur}{ 
+          //Tant que la Réponse du serveur n'est pas définie.\par
+          RéponseServeurTemp += RécupérerRéponse(SocketServeur)\; 
+          //On récupère le paquet envoyé par le serveur.\par
+          TailleDonnéesRestantes = RéponseServeurTemp.TailleDonnéesRestantes\;  
+          //On récupère dans les flags la taille des données restantes.\par
+          \Si{TailleDonnéesRestantes == 0}{ 
+            //ie le dernier paquet a été reçu.\par
+            RéponseServeur = RéponseServeurTemp\;
+            Fermer(SocketServeur)\;
+          }
+        }
+        RetourneRéponse(SocketClient)\;
+      }
+    }
+  }
+  \caption{Algorithme du proxy}
+\end{algorithm}
+
+
 
 \end{document}
